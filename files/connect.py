@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-import os
 import sys
-import time
 import consul
 import logging
 import requests
@@ -72,7 +70,7 @@ def main():
 
     LOG.setLevel(opts.log_level.upper())
 
-    LOG.info('Connecting to Consul: %s:%d', opts.consul_host, opts.consul_port)
+    LOG.debug('Connecting to Consul: %s:%d', opts.consul_host, opts.consul_port)
     c = consul.Consul(
         host=opts.consul_host,
         port=opts.consul_port,
@@ -89,6 +87,7 @@ def main():
         node_meta['stage'] = opts.service_stage
 
     services = []
+    invalid = []
     for dc in dcs:
         rval = c.catalog.service(
             opts.service_name,
@@ -96,9 +95,11 @@ def main():
             node_meta=node_meta
         )[1]
         services += rval
-        for service in rval:
-            LOG.debug('Service: %s (%s)',
-                      service['Node'], ','.join(service['ServiceTags']))
+        for s in rval:
+            LOG.debug('Service: %s (%s)', s['Node'], ','.join(s['ServiceTags']))
+            if s['ServiceMeta'].get('node_enode', 'unknown') == 'unknown':
+                LOG.error('Unknown peer enode address: %s', s)
+                invalid.append(s)
 
     LOG.info('Found %d services.', len(services))
     if len(services) == 0:
@@ -106,8 +107,10 @@ def main():
 
     enodes = [s['ServiceMeta']['node_enode'] for s in services]
 
-    LOG.info('Calling JSON RPC: %s:%d', opts.rpc_host, opts.rpc_port)
+    LOG.debug('Calling JSON RPC: %s:%d', opts.rpc_host, opts.rpc_port)
     rpc = RPC(host=opts.rpc_host, port=opts.rpc_port)
+
+    LOG.debug('Adding services...')
     rval = rpc.call(opts.rpc_method, params=[enodes])
     if 'error' in rval:
         raise Exception('RPC Error: %s' % rval['error'])
@@ -116,6 +119,10 @@ def main():
         LOG.info('SUCCESS')
     else:
         raise Exception('Unknown response: %s' % rval)
+
+    if len(invalid) > 0:
+        LOG.error('Some enode addresses were invalid!')
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
