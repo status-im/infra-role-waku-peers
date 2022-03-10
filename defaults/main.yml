@@ -1,5 +1,5 @@
 ---
-nim_waku_connect_consul_service_names: ['{{ nim_waku_cont_name }}']
+nim_waku_connect_consul_service_names: []
 nim_waku_connect_consul_service_env: '{{ env }}'
 nim_waku_connect_consul_service_stage: '{{ stage }}'
 

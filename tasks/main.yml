@@ -14,7 +14,7 @@
     delay: 5
 
 - name: Connecting Waku peers
-  with_items: '{{ nim_waku_connect_consul_service_names }}'
+  with_items: '{{ nim_waku_connect_consul_service_names | mandatory }}'
   command: |
     {{ nim_waku_connect_script_path }} \
       --log-level={{ nim_waku_connect_log_level }} \
