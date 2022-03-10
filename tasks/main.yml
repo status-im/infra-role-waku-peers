@@ -1,0 +1,44 @@
+---
+- name: Copy connection script
+  copy:
+    src: 'connect.py'
+    dest: '{{ nim_waku_connect_script_path }}'
+    owner: 'admin'
+    group: 'staff'
+    mode: 0750
+
+- name: Wait for RPC port
+  wait_for:
+    host: '{{ nim_waku_connect_rpc_host }}'
+    port: '{{ nim_waku_connect_rpc_port }}'
+    delay: 5
+
+- name: Connecting Waku peers
+  with_items: '{{ nim_waku_connect_consul_service_names }}'
+  command: |
+    {{ nim_waku_connect_script_path }} \
+      --log-level={{ nim_waku_connect_log_level }} \
+      --rpc-host={{ nim_waku_connect_rpc_host }} \
+      --rpc-port={{ nim_waku_connect_rpc_port }} \
+      --service-env={{ nim_waku_connect_consul_service_env | mandatory }} \
+      --service-stage={{ nim_waku_connect_consul_service_stage | mandatory }} \
+      --service-name={{ item | mandatory }}
+
+- name: Check for connected peers
+  uri:
+    url: 'http://{{ nim_waku_connect_rpc_host }}:{{ nim_waku_connect_rpc_port }}/'
+    method: 'POST'
+    body_format: 'json'
+    return_content: true
+    body: 
+      method: 'get_waku_v2_admin_v1_peers'
+      params: []
+      jsonrpc: '2.0'
+      id: 1
+  register: nim_waku_rpc_peers
+
+- name: 'Verify number of peers: {{ nim_waku_rpc_peers.json.result|length }}'
+  assert:
+    that: '{{ (nim_waku_rpc_peers.json.result|length) > 0 }}'
+    fail_msg: 'Found connected peers!'
+    quiet: true

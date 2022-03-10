@@ -1,0 +1,10 @@
+---
+nim_waku_connect_consul_service_names: ['{{ nim_waku_cont_name }}']
+nim_waku_connect_consul_service_env: '{{ env }}'
+nim_waku_connect_consul_service_stage: '{{ stage }}'
+
+nim_waku_connect_script_path: '/usr/local/bin/nim_waku_connect.py'
+nim_waku_connect_log_level: 'info'
+
+nim_waku_connect_rpc_host: 'localhost'
+nim_waku_connect_rpc_port: 8545
