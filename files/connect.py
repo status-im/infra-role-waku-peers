@@ -11,7 +11,7 @@ This script queries Consul for Nim-Waku services and then
 connects them to a node using JSON RPC API.
 """.strip()
 HELP_EXAMPLE = """
-Example: ./connect.py -s nim-waku-v2
+Example: ./connect.py -e status -s prod -n nim-waku,go-waku
 """
 
 # Setup logging.
@@ -19,10 +19,13 @@ log_format = '%(asctime)s [%(levelname)s] %(message)s'
 logging.basicConfig(level=logging.INFO, format=log_format)
 LOG = logging.getLogger(__name__)
 
+def parse_list(option, opt, value, parser):
+    setattr(parser.values, option.dest, value.split(','))
+
 def parse_opts():
     parser = OptionParser(description=HELP_DESCRIPTION, epilog=HELP_EXAMPLE)
-    parser.add_option('-n', '--service-name',
-                      help='Name of Consul services to query for.')
+    parser.add_option('-n', '--service-names', type='string', action='callback', callback=parse_list,
+                      help='Names of Consul services separated by commas.')
     parser.add_option('-e', '--service-env',
                       help='Env for Consul query filter.')
     parser.add_option('-s', '--service-stage',
@@ -88,18 +91,15 @@ def main():
 
     services = []
     invalid = []
-    for dc in dcs:
-        rval = c.catalog.service(
-            opts.service_name,
-            dc=dc,
-            node_meta=node_meta
-        )[1]
-        services += rval
-        for s in rval:
-            LOG.debug('Service: %s (%s)', s['Node'], ','.join(s['ServiceTags']))
-            if s['ServiceMeta'].get('node_enode', 'unknown') == 'unknown':
-                LOG.error('Unknown peer enode address: %s', s)
-                invalid.append(s)
+    for name in opts.service_names:
+        for dc in dcs:
+            rval = c.catalog.service(name, dc=dc, node_meta=node_meta)[1]
+            services += rval
+            for s in rval:
+                LOG.debug('Service: %s (%s)', s['Node'], ','.join(s['ServiceTags']))
+                if s['ServiceMeta'].get('node_enode', 'unknown') == 'unknown':
+                    LOG.error('Unknown peer enode address: %s', s)
+                    invalid.append(s)
 
     LOG.info('Found %d services.', len(services))
     if len(services) == 0:

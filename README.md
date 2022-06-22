@@ -30,6 +30,31 @@ The script can be used manually:
 2022-03-10 15:43:36,114 [INFO] SUCCESS
 ```
 
+# Management
+
+The script is called by a Systemd service:
+```
+ > sudo systemctl -o cat status waku-peers
+● waku-peers.service - Script for connecting waku fleet peers.
+     Loaded: loaded (/etc/systemd/system/waku-peers.service; static; vendor preset: enabled)
+     Active: inactive (dead) since Wed 2022-06-22 11:01:49 UTC; 5min ago
+TriggeredBy: ● waku-peers.timer
+       Docs: https://github.com/status-im/infra-role-waku-peers
+    Process: 2356000 ExecStart=/usr/local/bin/connect_waku_peers.py --log-level=info --rpc-host=localhost --rpc-port=8545 --service-env=status --service-stage=test --service-names=nim-waku,nim-waku-bridge (code=exited, status=0/SUCCESS)
+   Main PID: 2356000 (code=exited, status=0/SUCCESS)
+
+Starting Script for connecting waku fleet peers....
+2022-06-22 11:01:42,565 [INFO] Found 5 data centers.
+2022-06-22 11:01:43,317 [INFO] Found 4 services.
+2022-06-22 11:01:49,305 [INFO] SUCCESS
+```
+Which runs hourly via a [Systemd timer](https://github.com/status-im/infra-role-systemd-timer).
+```
+ > sudo systemctl list-timers -a waku-peers
+NEXT                        LEFT       LAST                        PASSED       UNIT             ACTIVATES         
+Wed 2022-06-22 12:00:00 UTC 55min left Wed 2022-06-22 11:00:06 UTC 4min 52s ago waku-peers.timer waku-peers.service
+```
+
 # Links
 
 * https://github.com/status-im/infra-status/issues/4

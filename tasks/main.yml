@@ -5,7 +5,7 @@
     dest: '{{ waku_peers_script_path }}'
     owner: 'admin'
     group: 'staff'
-    mode: 0750
+    mode: 0755
 
 - name: Wait for RPC port
   wait_for:
@@ -13,16 +13,28 @@
     port: '{{ waku_peers_rpc_port }}'
     delay: 5
 
-- name: Connecting Waku peers
-  with_items: '{{ waku_peers_consul_service_names | mandatory }}'
-  command: |
-    {{ waku_peers_script_path }} \
+- name: Create timer for connecting peers
+  include_role: name=systemd-timer
+  vars:
+    systemd_timer_name: '{{ waku_peers_timer_name }}'
+    systemd_timer_description: '{{ waku_peers_timer_description }}'
+    systemd_timer_documentation: 'https://github.com/status-im/infra-role-waku-peers'
+    systemd_timer_consul_extra_tags: ['waku']
+    systemd_timer_requires_extra: 'consul.service'
+    systemd_timer_start_on_creation: true
+    systemd_timer_user:         '{{ waku_peers_timer_user }}'
+    systemd_timer_group:        '{{ waku_peers_timer_group }}'
+    systemd_timer_frequency:    '{{ waku_peers_timer_frequency }}'
+    systemd_timer_timeout_sec:  '{{ waku_peers_timer_timeout_sec }}'
+    systemd_timer_enabled:      '{{ waku_peers_timer_enabled }}'
+    systemd_timer_script_path:  '{{ waku_peers_script_path }}'
+    systemd_timer_script_args: |
       --log-level={{ waku_peers_log_level }} \
       --rpc-host={{ waku_peers_rpc_host }} \
       --rpc-port={{ waku_peers_rpc_port }} \
       --service-env={{ waku_peers_consul_service_env | mandatory }} \
       --service-stage={{ waku_peers_consul_service_stage | mandatory }} \
-      --service-name={{ item | mandatory }}
+      --service-names={{ waku_peers_consul_service_names | join(",") | mandatory }}
 
 - name: Check for connected peers
   uri:

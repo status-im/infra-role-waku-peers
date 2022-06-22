@@ -1,10 +1,22 @@
 ---
+# Systemd timer for periodic re-connecting.
+waku_peers_timer_name: 'waku-peers'
+waku_peers_timer_description: 'Script for connecting waku fleet peers.'
+waku_peers_timer_user: 'nobody'
+waku_peers_timer_group: 'nogroup'
+waku_peers_timer_frequency: 'hourly'
+waku_peers_timer_timeout_sec: 120
+waku_peers_timer_enabled: true
+
+# Consul service definition data.
 waku_peers_consul_service_names: []
 waku_peers_consul_service_env: '{{ env }}'
 waku_peers_consul_service_stage: '{{ stage }}'
 
+# Script for adding peers via JSON-RPC API.
 waku_peers_script_path: '/usr/local/bin/connect_waku_peers.py'
 waku_peers_log_level: 'info'
 
+# Waku node JSON-RPC API address
 waku_peers_rpc_host: 'localhost'
 waku_peers_rpc_port: 8545
