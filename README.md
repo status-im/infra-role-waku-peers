@@ -10,16 +10,16 @@ This role runs a Python script to:
 
 Bare minimum would include:
 ```yaml
-nim_waku_connect_consul_service_names: ['nim-waku-v2', 'go-waku']
-nim_waku_connect_consul_service_env: 'example'
-nim_waku_connect_consul_service_stage: 'prod'
+waku_peers_connect_consul_service_names: ['nim-waku-v2', 'go-waku']
+waku_peers_connect_consul_service_env: 'example'
+waku_peers_connect_consul_service_stage: 'prod'
 ```
 
 # Usage
 
 The script can be used manually:
 ```sh
- > /usr/local/bin/nim_waku_connect.py -n nim-waku -e status -s test -l debug
+ > /usr/local/bin/connect_waku_peers.py -n nim-waku -e status -s test -l debug
 2022-03-10 15:43:29,686 [INFO] Connecting to Consul: localhost:8500
 2022-03-10 15:43:29,692 [INFO] Found 5 data centers.
 2022-03-10 15:43:29,697 [DEBUG] Service: node-01.do-ams3.status.test (env:status,stage:test,nim,waku,libp2p)

@@ -2,31 +2,31 @@
 - name: Copy connection script
   copy:
     src: 'connect.py'
-    dest: '{{ nim_waku_connect_script_path }}'
+    dest: '{{ waku_peers_script_path }}'
     owner: 'admin'
     group: 'staff'
     mode: 0750
 
 - name: Wait for RPC port
   wait_for:
-    host: '{{ nim_waku_connect_rpc_host }}'
-    port: '{{ nim_waku_connect_rpc_port }}'
+    host: '{{ waku_peers_rpc_host }}'
+    port: '{{ waku_peers_rpc_port }}'
     delay: 5
 
 - name: Connecting Waku peers
-  with_items: '{{ nim_waku_connect_consul_service_names | mandatory }}'
+  with_items: '{{ waku_peers_consul_service_names | mandatory }}'
   command: |
-    {{ nim_waku_connect_script_path }} \
-      --log-level={{ nim_waku_connect_log_level }} \
-      --rpc-host={{ nim_waku_connect_rpc_host }} \
-      --rpc-port={{ nim_waku_connect_rpc_port }} \
-      --service-env={{ nim_waku_connect_consul_service_env | mandatory }} \
-      --service-stage={{ nim_waku_connect_consul_service_stage | mandatory }} \
+    {{ waku_peers_script_path }} \
+      --log-level={{ waku_peers_log_level }} \
+      --rpc-host={{ waku_peers_rpc_host }} \
+      --rpc-port={{ waku_peers_rpc_port }} \
+      --service-env={{ waku_peers_consul_service_env | mandatory }} \
+      --service-stage={{ waku_peers_consul_service_stage | mandatory }} \
       --service-name={{ item | mandatory }}
 
 - name: Check for connected peers
   uri:
-    url: 'http://{{ nim_waku_connect_rpc_host }}:{{ nim_waku_connect_rpc_port }}/'
+    url: 'http://{{ waku_peers_rpc_host }}:{{ waku_peers_rpc_port }}/'
     method: 'POST'
     body_format: 'json'
     return_content: true
