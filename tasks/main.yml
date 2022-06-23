@@ -32,6 +32,7 @@
       --log-level={{ waku_peers_log_level }} \
       --rpc-host={{ waku_peers_rpc_host }} \
       --rpc-port={{ waku_peers_rpc_port }} \
+      --rpc-timeout={{ waku_peers_rpc_timeout }} \
       --service-env={{ waku_peers_consul_service_env | mandatory }} \
       --service-stage={{ waku_peers_consul_service_stage | mandatory }} \
       --service-names={{ waku_peers_consul_service_names | join(",") | mandatory }}

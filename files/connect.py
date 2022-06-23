@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import sys
 import consul
+import socket
 import logging
 import requests
 from os import environ
 from optparse import OptionParser
+from urllib3.util import Retry
 
 HELP_DESCRIPTION = """
 This script queries Consul for Nim-Waku services and then
@@ -15,7 +17,7 @@ Example: ./connect.py -e status -s prod -n nim-waku,go-waku
 """
 
 # Setup logging.
-log_format = '%(asctime)s [%(levelname)s] %(message)s'
+log_format = '[%(levelname)s] %(message)s'
 logging.basicConfig(level=logging.INFO, format=log_format)
 LOG = logging.getLogger(__name__)
 
@@ -36,12 +38,16 @@ def parse_opts():
                       help='Consul listening address.')
     parser.add_option('-d', '--consul-port', default=8500,
                       help='Consul listening port.')
+    parser.add_option('-o', '--consul-timeout', type=int, default=10,
+                      help='Consul query timeout in seconds.')
     parser.add_option('-H', '--rpc-host', default='localhost',
                       help='JSON RPC listening address.')
     parser.add_option('-P', '--rpc-port', type=int, default=8545,
                       help='JSON RPC listening port.')
     parser.add_option('-M', '--rpc-method', default='post_waku_v2_admin_v1_peers',
                       help='JSON RPC method to call.')
+    parser.add_option('-T', '--rpc-timeout', type=int, default=10,
+                      help='JSON RPC method timeout in seconds.')
     parser.add_option('-l', '--log-level', default='info',
                       help='Change default logging level.')
 
@@ -52,9 +58,10 @@ def parse_opts():
     return parser.parse_args()
 
 class RPC:
-    def __init__(self, host='localhost', port=8545):
+    def __init__(self, host='localhost', port=8545, timeout=30):
         self.host = host
         self.port = port
+        self.timeout = timeout
 
     def call(self, method, params=[]):
         payload = {
@@ -63,10 +70,15 @@ class RPC:
             "jsonrpc": "2.0",
             "id": 0,
         }
-        return requests.post(
-            'http://%s:%d' % (self.host, self.port),
-            json=payload
-        ).json()
+        try:
+            return requests.post(
+                'http://%s:%d' % (self.host, self.port),
+                json=payload,
+                timeout=self.timeout
+            ).json()
+        except requests.exceptions.ReadTimeout as ex:
+            LOG.error('RPC Request timed out after %d seconds!' % self.timeout)
+            return None
 
 def main():
     (opts, args) = parse_opts()
@@ -77,7 +89,8 @@ def main():
     c = consul.Consul(
         host=opts.consul_host,
         port=opts.consul_port,
-        token=opts.consul_token
+        token=opts.consul_token,
+        timeout=opts.consul_timeout
     )
 
     dcs = c.catalog.datacenters()
@@ -108,11 +121,13 @@ def main():
     enodes = [s['ServiceMeta']['node_enode'] for s in services]
 
     LOG.debug('Calling JSON RPC: %s:%d', opts.rpc_host, opts.rpc_port)
-    rpc = RPC(host=opts.rpc_host, port=opts.rpc_port)
+    rpc = RPC(host=opts.rpc_host, port=opts.rpc_port, timeout=opts.rpc_timeout)
 
     LOG.debug('Adding services...')
     rval = rpc.call(opts.rpc_method, params=[enodes])
-    if 'error' in rval:
+    if rval is None:
+        raise Exception('RPC Call failure!')
+    elif 'error' in rval:
         raise Exception('RPC Error: %s' % rval['error'])
 
     if rval['result'] == True:
