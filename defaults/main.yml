@@ -21,3 +21,4 @@ waku_peers_log_level: 'info'
 waku_peers_rpc_host: 'localhost'
 waku_peers_rpc_port: 8545
 waku_peers_rpc_timeout: 10
+waku_peers_rpc_retries: 3

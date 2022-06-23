@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import sys
+import json
 import consul
-import socket
 import logging
-import requests
 from os import environ
 from optparse import OptionParser
-from urllib3.util import Retry
+from urllib3 import util, PoolManager
 
 HELP_DESCRIPTION = """
 This script queries Consul for Nim-Waku services and then
@@ -48,6 +47,8 @@ def parse_opts():
                       help='JSON RPC method to call.')
     parser.add_option('-T', '--rpc-timeout', type=int, default=10,
                       help='JSON RPC method timeout in seconds.')
+    parser.add_option('-R', '--rpc-retries', type=int, default=3,
+                      help='JSON RPC method timeout in seconds.')
     parser.add_option('-l', '--log-level', default='info',
                       help='Change default logging level.')
 
@@ -58,10 +59,12 @@ def parse_opts():
     return parser.parse_args()
 
 class RPC:
-    def __init__(self, host='localhost', port=8545, timeout=30):
+    def __init__(self, host='localhost', port=8545, timeout=30, retries=3):
         self.host = host
         self.port = port
-        self.timeout = timeout
+        self.timeout = util.Timeout(connect=timeout, read=timeout)
+        self.retries = util.Retry(connect=retries, read=retries, method_whitelist=["POST"])
+        self.http = PoolManager(retries=self.retries, timeout=self.timeout)
 
     def call(self, method, params=[]):
         payload = {
@@ -70,15 +73,13 @@ class RPC:
             "jsonrpc": "2.0",
             "id": 0,
         }
-        try:
-            return requests.post(
-                'http://%s:%d' % (self.host, self.port),
-                json=payload,
-                timeout=self.timeout
-            ).json()
-        except requests.exceptions.ReadTimeout as ex:
-            LOG.error('RPC Request timed out after %d seconds!' % self.timeout)
-            return None
+        rval = self.http.request(
+            'POST',
+            'http://%s:%d' % (self.host, self.port),
+            headers={'Content-Type': 'application/json'},
+            body=json.dumps(payload)
+        )
+        return json.loads(rval.data)
 
 def main():
     (opts, args) = parse_opts()
@@ -109,7 +110,7 @@ def main():
             rval = c.catalog.service(name, dc=dc, node_meta=node_meta)[1]
             services += rval
             for s in rval:
-                LOG.debug('Service: %s (%s)', s['Node'], ','.join(s['ServiceTags']))
+                LOG.debug('Found: %s (%s)', s['Node'], ','.join(s['ServiceTags']))
                 if s['ServiceMeta'].get('node_enode', 'unknown') == 'unknown':
                     LOG.error('Unknown peer enode address: %s', s)
                     invalid.append(s)
@@ -121,7 +122,12 @@ def main():
     enodes = [s['ServiceMeta']['node_enode'] for s in services]
 
     LOG.debug('Calling JSON RPC: %s:%d', opts.rpc_host, opts.rpc_port)
-    rpc = RPC(host=opts.rpc_host, port=opts.rpc_port, timeout=opts.rpc_timeout)
+    rpc = RPC(
+        host=opts.rpc_host,
+        port=opts.rpc_port,
+        timeout=opts.rpc_timeout,
+        retries=opts.rpc_retries
+    )
 
     LOG.debug('Adding services...')
     rval = rpc.call(opts.rpc_method, params=[enodes])
