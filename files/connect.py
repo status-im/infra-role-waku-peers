@@ -67,15 +67,18 @@ class RPC:
         self.http = PoolManager(retries=self.retries, timeout=self.timeout)
 
     def call(self, method, params=[]):
+        url = 'http://%s:%d' % (self.host, self.port)
         payload = {
             "method": method,
             "params": params,
             "jsonrpc": "2.0",
             "id": 0,
         }
+        LOG.debug('RPC Call URL: %s', url)
+        LOG.debug('RPC Call Payload: %s', payload)
         rval = self.http.request(
             'POST',
-            'http://%s:%d' % (self.host, self.port),
+            url,
             headers={'Content-Type': 'application/json'},
             body=json.dumps(payload)
         )
@@ -107,6 +110,7 @@ def main():
     invalid = []
     for name in opts.service_names:
         for dc in dcs:
+            LOG.debug('Querying: %s (dc=%s, node_meta=%s)', name, dc, node_meta)
             rval = c.catalog.service(name, dc=dc, node_meta=node_meta)[1]
             services += rval
             for s in rval:
