@@ -141,7 +141,7 @@ def main():
     rval = rpc.call(opts.rpc_method, params=[enodes])
     if rval is None:
         raise Exception('RPC Call failure!')
-    elif 'error' in rval:
+    elif 'error' in rval and rval['error'] is not None:
         raise Exception('RPC Error: %s' % rval['error'])
 
     if rval['result'] == True:
