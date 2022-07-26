@@ -2,6 +2,7 @@
 import sys
 import json
 import consul
+import socket
 import logging
 from os import environ
 from optparse import OptionParser
@@ -118,6 +119,9 @@ def main():
                 if s['ServiceMeta'].get('node_enode', 'unknown') == 'unknown':
                     LOG.error('Unknown peer enode address: %s', s)
                     invalid.append(s)
+
+    # Exclude services from current host.
+    services = list(filter(lambda s: s['Node'] != socket.gethostname(), services))
 
     LOG.info('Found %d services.', len(services))
     if len(services) == 0:
