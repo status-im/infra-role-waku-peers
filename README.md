@@ -10,24 +10,30 @@ This role runs a Python script to:
 
 Bare minimum would include:
 ```yaml
-waku_peers_connect_consul_service_names: ['nim-waku-v2', 'go-waku']
-waku_peers_connect_consul_service_env: 'example'
-waku_peers_connect_consul_service_stage: 'prod'
+waku_peers_consul_services:
+  - { name: 'nim-waku-v2', env: 'wakuv2',  stage: 'test' }
+  - { name: 'go-waku',     env: 'go-waku', stage: 'test' }
 ```
 
 # Usage
 
 The script can be used manually:
 ```sh
- > /usr/local/bin/connect_waku_peers.py -n nim-waku -e status -s test -l debug
-2022-03-10 15:43:29,686 [INFO] Connecting to Consul: localhost:8500
-2022-03-10 15:43:29,692 [INFO] Found 5 data centers.
-2022-03-10 15:43:29,697 [DEBUG] Service: node-01.do-ams3.status.test (env:status,stage:test,nim,waku,libp2p)
-2022-03-10 15:43:29,939 [DEBUG] Service: node-01.gc-us-central1-a.status.test (env:status,stage:test,nim,waku,libp2p)
-2022-03-10 15:43:30,154 [DEBUG] Service: node-01.ac-cn-hongkong-c.status.test (env:status,stage:test,nim,waku,libp2p)
-2022-03-10 15:43:30,154 [INFO] Found 3 services.
-2022-03-10 15:43:30,155 [INFO] Calling JSON RPC: localhost:8545
-2022-03-10 15:43:36,114 [INFO] SUCCESS
+ > /usr/local/bin/connect_waku_peers.py -l debug -s '{"name": "go-waku", "env": "go-waku", "stage": "test"}'
+[DEBUG] Connecting to Consul: localhost:8500
+[INFO] Found 5 data centers.
+[DEBUG] Querying: go-waku (dc=do-ams3, node_meta={'env': 'go-waku', 'stage': 'test'})
+[DEBUG] Found: node-01.do-ams3.go-waku.test (env:go-waku,stage:test,go,waku)
+[DEBUG] Querying: go-waku (dc=gc-us-central1-a, node_meta={'env': 'go-waku', 'stage': 'test'})
+[DEBUG] Found: node-01.gc-us-central1-a.go-waku.test (env:go-waku,stage:test,go,waku)
+[DEBUG] Querying: go-waku (dc=ac-cn-hongkong-c, node_meta={'env': 'go-waku', 'stage': 'test'})
+[DEBUG] Found: node-01.ac-cn-hongkong-c.go-waku.test (env:go-waku,stage:test,go,waku)
+[INFO] Found 2 services.
+[DEBUG] Calling JSON RPC: localhost:8545
+[DEBUG] Adding services...
+[DEBUG] RPC Call URL: http://localhost:8545
+[DEBUG] RPC Call Payload: {'method': 'post_waku_v2_admin_v1_peers', 'params': [['/ip4/35.223.183.91/tcp/30303/p2p/16Uiu2HAmPz63Xc6AuVkDeujz7YeZta18rcdau3Y1BzaxKAfDrBqz', '/ip4/8.218.2.110/tcp/30303/p2p/16Uiu2HAmBDbMWFiG9ki8sDw6fYtraSxo4oHU9HbuN43S2HVyq1FD']], 'jsonrpc': '2.0', 'id': 0}
+[INFO] SUCCESS
 ```
 
 # Management

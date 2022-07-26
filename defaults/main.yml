@@ -1,4 +1,4 @@
----
+
 # Systemd timer for periodic re-connecting.
 waku_peers_timer_name: 'waku-peers'
 waku_peers_timer_description: 'Script for connecting waku fleet peers.'
@@ -12,9 +12,9 @@ waku_peers_timer_restart_retries: 3
 waku_peers_timer_enabled: true
 
 # Consul service definition data.
-waku_peers_consul_service_names: []
-waku_peers_consul_service_env: '{{ env }}'
-waku_peers_consul_service_stage: '{{ stage }}'
+waku_peers_consul_services: []
+#  - { name: 'nim-waku', env: 'wakuv2',  stage: 'test' }
+#  - { name: 'go-waku',  env: 'go-waku', stage: 'test' }
 
 # Script for adding peers via JSON-RPC API.
 waku_peers_script_path: '/usr/local/bin/connect_waku_peers.py'

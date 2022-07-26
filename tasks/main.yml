@@ -32,14 +32,14 @@
     systemd_timer_restart_retries: '{{ waku_peers_timer_restart_retries }}'
     systemd_timer_script_path:     '{{ waku_peers_script_path }}'
     systemd_timer_script_args: |
-      --log-level={{ waku_peers_log_level }} \
       --rpc-host={{ waku_peers_rpc_host }} \
       --rpc-port={{ waku_peers_rpc_port }} \
       --rpc-timeout={{ waku_peers_rpc_timeout }} \
       --rpc-retries={{ waku_peers_rpc_retries }} \
-      --service-env={{ waku_peers_consul_service_env | mandatory }} \
-      --service-stage={{ waku_peers_consul_service_stage | mandatory }} \
-      --service-names={{ waku_peers_consul_service_names | join(",") | mandatory }}
+      {% for service in waku_peers_consul_services %}
+      --service='{{ service | to_json }}' \
+      {% endfor %}
+      --log-level={{ waku_peers_log_level }}
 
 - name: Check for connected peers
   uri:

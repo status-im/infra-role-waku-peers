@@ -9,11 +9,11 @@ from optparse import OptionParser
 from urllib3 import util, PoolManager
 
 HELP_DESCRIPTION = """
-This script queries Consul for Nim-Waku services and then
-connects them to a node using JSON RPC API.
+This script queries Consul for specified services and then
+connects them to a Waku node using JSON RPC API.
 """.strip()
 HELP_EXAMPLE = """
-Example: ./connect.py -e status -s prod -n nim-waku,go-waku
+Example: ./connect.py -s '{"name":"nim-waku","env":"status","stage":"test"}'
 """
 
 # Setup logging.
@@ -21,17 +21,10 @@ log_format = '[%(levelname)s] %(message)s'
 logging.basicConfig(level=logging.INFO, format=log_format)
 LOG = logging.getLogger(__name__)
 
-def parse_list(option, opt, value, parser):
-    setattr(parser.values, option.dest, value.split(','))
-
 def parse_opts():
     parser = OptionParser(description=HELP_DESCRIPTION, epilog=HELP_EXAMPLE)
-    parser.add_option('-n', '--service-names', type='string', action='callback', callback=parse_list,
-                      help='Names of Consul services separated by commas.')
-    parser.add_option('-e', '--service-env',
-                      help='Env for Consul query filter.')
-    parser.add_option('-s', '--service-stage',
-                      help='Stage for Consul query filter.')
+    parser.add_option('-s', '--services', type='string', action="append",
+                      help='JSON object defining Consul service to query for.')
     parser.add_option('-t', '--consul-token', default=environ.get('CONSUL_HTTP_TOKEN'),
                       help='Consul ACL token for catalog API access.')
     parser.add_option('-c', '--consul-host', default='localhost',
@@ -101,15 +94,19 @@ def main():
     dcs = c.catalog.datacenters()
     LOG.info('Found %d data centers.', len(dcs))
 
-    node_meta = {}
-    if opts.service_env:
-        node_meta['env'] = opts.service_env
-    if opts.service_stage:
-        node_meta['stage'] = opts.service_stage
-
     services = []
     invalid = []
-    for name in opts.service_names:
+    for service in opts.services:
+        service = json.loads(service)
+        if 'name' not in service:
+            raise Exception('No service name given!')
+        name = service['name']
+        node_meta = {}
+        if 'env' in service:
+            node_meta['env'] = service['env']
+        if 'stage' in service:
+            node_meta['stage'] = service['stage']
+
         for dc in dcs:
             LOG.debug('Querying: %s (dc=%s, node_meta=%s)', name, dc, node_meta)
             rval = c.catalog.service(name, dc=dc, node_meta=node_meta)[1]
