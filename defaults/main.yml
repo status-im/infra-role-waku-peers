@@ -2,8 +2,7 @@
 # Systemd timer for periodic re-connecting.
 waku_peers_timer_name: 'waku-peers'
 waku_peers_timer_description: 'Script for connecting waku fleet peers.'
-waku_peers_timer_user: 'nobody'
-waku_peers_timer_group: 'nogroup'
+waku_peers_timer_dynamic_user: true
 waku_peers_timer_frequency: 'hourly'
 waku_peers_timer_timeout_sec: 120
 waku_peers_timer_restart: 'on-failure'
