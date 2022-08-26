@@ -57,7 +57,7 @@ class RPC:
         self.host = host
         self.port = port
         self.timeout = util.Timeout(connect=timeout, read=timeout)
-        self.retries = util.Retry(connect=retries, read=retries, method_whitelist=["POST"])
+        self.retries = util.Retry(connect=retries, read=retries, allowed_methods=["POST"])
         self.http = PoolManager(retries=self.retries, timeout=self.timeout)
 
     def call(self, method, params=[]):
